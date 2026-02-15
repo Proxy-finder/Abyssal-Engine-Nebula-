@@ -25,11 +25,7 @@ const paths = [
     process.env.CHROME_BIN || '/app/.apt/usr/bin/chromium',
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
-    '/snap/bin/chromium',
-    // Windows paths
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+    '/snap/bin/chromium'
 ];
 
 let exePath = null;
