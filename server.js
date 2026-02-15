@@ -21,6 +21,11 @@ const HEIGHT = 720;
 
 // --- LOCATE BROWSER ---
 const paths = [
+    // Linux paths (Koyeb)
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+    // Windows paths
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
@@ -74,8 +79,13 @@ async function createNewTab(ws, url = 'about:blank') {
 }
 
 (async () => {
-    if (!exePath) { console.log("❌ Browser not found"); process.exit(1); }
+    if (!exePath) { 
+        console.log("❌ Browser not found at:", paths);
+        console.log("❌ Please install Chrome/Chromium or Edge");
+        process.exit(1); 
+    }
     console.log(`🌌 Nebula Engine starting on port ${HTTP_PORT}...`);
+    console.log(`📍 Using browser: ${exePath}`);
 
     browser = await puppeteer.launch({
         executablePath: exePath,
