@@ -21,16 +21,26 @@ const HEIGHT = 720;
 
 // --- LOCATE BROWSER ---
 const paths = [
-    // Linux paths (Koyeb)
-    '/usr/bin/chromium',
+    // Linux paths (Koyeb with buildpack)
+    process.env.CHROME_BIN || '/app/.apt/usr/bin/chromium',
     '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
     '/snap/bin/chromium',
     // Windows paths
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 ];
-const exePath = paths.find(p => fs.existsSync(p));
+
+let exePath = null;
+for (const p of paths) {
+    try {
+        if (fs.existsSync(p)) {
+            exePath = p;
+            break;
+        }
+    } catch(e) {}
+}
 
 let browser;
 let pages = []; // { id, page }
@@ -267,7 +277,7 @@ async function createNewTab(ws, url = 'about:blank') {
         });
     });
 
-    server.listen(HTTP_PORT, () => {
-        console.log(`✅ Server running at http://localhost:${HTTP_PORT}`);
+    server.listen(HTTP_PORT, '0.0.0.0', () => {
+        console.log(`✅ Server running at http://0.0.0.0:${HTTP_PORT}`);
     });
 })();

@@ -3,8 +3,13 @@ build:
     - name: "puppeteer"
       url: "https://github.com/jontewks/puppeteer-heroku-buildpack"
 
+run:
+  command: "npm start"
+
 env:
   - key: "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD"
     value: "false"
+  - key: "CHROME_BIN"
+    value: "/app/.apt/usr/bin/chromium"
   - key: "PORT"
     value: "8000"
