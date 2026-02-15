@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Browser</title>
+    <link rel="icon" type="image/png" href="image.png">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050509;
+            --glass-dark: rgba(10, 10, 16, 0.85);
+            --glass-medium: rgba(20, 20, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
+            --accent: #a855f7;
+            --accent-glow: rgba(168, 85, 247, 0.5);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-deep);
+            background-image: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #000000 100%);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* PARTICLES */
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* UI LAYOUT */
+        #ui-container {
+            display: flex; flex-direction: column; z-index: 50;
+            background: rgba(0,0,0,0.2);
+        }
+
+        /* TABS */
+        .uptop-bar {
+            background: var(--glass-dark);
+            backdrop-filter: blur(20px);
+            display: flex; align-items: flex-end;
+            padding: 8px 8px 0 8px; gap: 6px;
+            height: 40px;
+            border-bottom: 1px solid var(--glass-border);
+            -webkit-app-region: drag;
+        }
+
+        .tab {
+            display: flex; align-items: center;
+            background-color: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+            border-radius: 10px 10px 0 0;
+            padding: 8px 16px;
+            width: 180px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent; border-bottom: none;
+            -webkit-app-region: no-drag;
+        }
+
+        .tab:hover { background-color: var(--glass-highlight); color: white; }
+        
+        .tab.active {
+            background: rgba(30, 30, 40, 0.95);
+            color: #fff;
+            border-color: var(--glass-border);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+        }
+
+        .tab-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tab-close { margin-left: 8px; opacity: 0.6; border-radius: 50%; padding: 2px; cursor: pointer; pointer-events: auto; }
+        .tab-close:hover { background: rgba(239, 68, 68, 0.3); color: #ef4444; opacity: 1; }
+
+        .add-tab-btn {
+            color: var(--text-muted); padding: 6px; cursor: pointer; -webkit-app-region: no-drag;
+        }
+        .add-tab-btn:hover { color: white; }
+
+        /* NAVBAR */
+        .browser-bar {
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(25px);
+            display: flex; align-items: center;
+            padding: 8px 16px; gap: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            padding: 6px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .nav-btn:hover { background: var(--glass-highlight); color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+        .address-bar {
+            flex-grow: 1;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 99px;
+            padding: 0 16px; height: 36px;
+            display: flex; align-items: center;
+            border: 1px solid var(--glass-border);
+            transition: 0.3s;
+        }
+        .address-bar:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .address-bar input {
+            border: none; width: 100%; outline: none;
+            font-size: 14px; color: #fff; background: transparent;
+            font-family: 'Roboto', sans-serif;
+            margin-left: 10px;
+        }
+
+        /* VIEWPORT AREA */
+        #viewport {
+            flex: 1; position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1;
+        }
+
+        /* STREAM IMAGE */
+        #stream-img {
+            width: 100%; height: 100%; object-fit: contain;
+            display: none; /* Hidden by default until page loads */
+        }
+
+        /* NEBULA START PAGE (Overlay) */
+        #nebula-start {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 10;
+        }
+
+        h1.logo {
+            font-size: 80px; font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin: 0 0 10px 0;
+            text-shadow: 0 0 50px rgba(168, 85, 247, 0.4);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+        .big-search {
+            width: 500px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 99px;
+            padding: 16px 24px;
+            display: flex; align-items: center;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
+        }
+        .big-search:hover, .big-search:focus-within {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--accent);
+            transform: scale(1.02);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        .big-search input {
+            background: transparent; border: none; color: white;
+            font-size: 18px; width: 100%; outline: none; margin-left: 12px;
+        }
+
+        #status-indicator {
+            position: absolute; bottom: 10px; right: 10px;
+            font-size: 10px; color: #4ade80; opacity: 0.6;
+        }
+
+        /* FULLSCREEN MODE */
+        body.fullscreen-mode #ui-container {
+            display: none !important;
+        }
+
+        body.fullscreen-mode #viewport {
+            height: 100vh;
+        }
+
+        .fullscreen-exit-hint {
+            position: fixed; top: 10px; right: 10px; z-index: 999;
+            font-size: 12px; color: var(--text-muted);
+            background: rgba(0,0,0,0.6); padding: 8px 12px;
+            border-radius: 6px; backdrop-filter: blur(10px);
+            opacity: 0; transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        body.fullscreen-mode:hover .fullscreen-exit-hint {
+            opacity: 1;
+        }
+    </style>
+  </head>
+  <body>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="ui-container">
+        <div class="uptop-bar">
+            <div id="tabs-list" style="display:flex; gap:5px; flex:1; overflow-x:auto;">
+                </div>
+            <div class="add-tab-btn" onclick="sendCommand('new-tab')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </div>
+        </div>
+
+        <div class="browser-bar">
+            <button class="nav-btn" onclick="sendCommand('back')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <button class="nav-btn" onclick="sendCommand('forward')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+            <button class="nav-btn" onclick="sendCommand('reload')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2-8.94"></path></svg></button>
+            <button class="nav-btn" onclick="showStartPage()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+
+            <div class="address-bar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" style="flex-shrink: 0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <input type="text" id="url-input" placeholder="Search or type a URL">
+            </div>
+
+            <button class="nav-btn" onclick="toggleFullscreen()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
+            <button class="nav-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></button>
+        </div>
+    </div>
+
+        <div id="viewport">
+            <div class="fullscreen-exit-hint">Press F11 or Esc to exit fullscreen</div>
+        
+        <div id="nebula-start">
+            <h1 class="logo">Nebula</h1>
+            <div style="color:var(--text-muted); letter-spacing:4px; margin-bottom:40px; font-size:14px;">LIGHTSPED</div>
+            <div class="big-search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="flex-shrink: 0;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                <input type="text" id="big-input" placeholder="Search the web...">
+            </div>
+        </div>
+
+        <img id="stream-img">
+        
+        <div id="click-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:default; display:none; pointer-events: auto; z-index: 100;"></div>
+        
+        <div id="status-indicator">Connecting...</div>
+    </div>
+
+    <script>
+        // --- PARTICLE BACKGROUND SCRIPT ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.addEventListener('resize', resize); resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+                this.alpha = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0) this.x = canvas.width; if(this.x > canvas.width) this.x = 0;
+                if(this.y < 0) this.y = canvas.height; if(this.y > canvas.height) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(168, 85, 247, ${this.alpha})`;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        for(let i=0; i<60; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- BROWSER LOGIC ---
+        const ws = new WebSocket('ws://' + window.location.hostname + ':' + window.location.port);
+        const streamImg = document.getElementById('stream-img');
+        const startPage = document.getElementById('nebula-start');
+        const clickLayer = document.getElementById('click-layer');
+        const urlInput = document.getElementById('url-input');
+        const bigInput = document.getElementById('big-input');
+        const tabsList = document.getElementById('tabs-list');
+
+        let isStartPage = true;
+        let currentTabUrl = 'about:blank';
+        let isFullscreen = false;
+
+        ws.onopen = () => { document.getElementById('status-indicator').innerText = "● ONLINE"; };
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+
+            if (msg.type === 'frame') {
+                streamImg.src = 'data:image/jpeg;base64,' + msg.data;
+            }
+
+            if (msg.type === 'tabs-update') {
+                renderTabs(msg.tabs, msg.activeId);
+                const activeTab = msg.tabs.find(t => t.id === msg.activeId);
+                
+                if (activeTab) {
+                    currentTabUrl = activeTab.url;
+                    // Show start page only if tab URL is about:blank
+                    if (activeTab.url === 'about:blank') {
+                        showStartPage();
+                    } else {
+                        if (activeTab.url !== urlInput.value) urlInput.value = activeTab.url;
+                        hideStartPage();
+                    }
+                }
+            }
+        };
+
+        function renderTabs(tabs, activeId) {
+            tabsList.innerHTML = '';
+            tabs.forEach(tab => {
+                const el = document.createElement('div');
+                el.className = `tab ${tab.id === activeId ? 'active' : ''}`;
+                el.dataset.tabId = tab.id;
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'tab-title';
+                titleSpan.textContent = tab.title || 'Nebula Tab';
+                el.appendChild(titleSpan);
+                
+                const closeIcon = document.createElement('svg');
+                closeIcon.setAttribute('width', '14');
+                closeIcon.setAttribute('height', '14');
+                closeIcon.setAttribute('viewBox', '0 0 24 24');
+                closeIcon.setAttribute('fill', 'none');
+                closeIcon.setAttribute('stroke', 'currentColor');
+                closeIcon.setAttribute('stroke-width', '2');
+                closeIcon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+                closeIcon.className = 'tab-close';
+                closeIcon.dataset.action = 'close';
+                closeIcon.style.pointerEvents = 'auto';
+                closeIcon.style.cursor = 'pointer';
+                el.appendChild(closeIcon);
+                
+                tabsList.appendChild(el);
+            });
+            
+            // Single delegated event listener for all tabs
+            tabsList.addEventListener('click', (e) => {
+                const tabEl = e.target.closest('.tab');
+                if (!tabEl) return;
+                
+                const tabId = tabEl.dataset.tabId;
+                const closeBtn = e.target.closest('[data-action="close"]');
+                
+                if (closeBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendCommand('close-tab', tabId);
+                } else {
+                    sendCommand('switch-tab', tabId);
+                }
+            }, true); // Use capture phase for close button
+        }
+
+        function navigate(url) {
+            hideStartPage();
+            
+            // Check if it's a valid URL or needs to be searched
+            let finalUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                // Check if it looks like a domain (has a dot)
+                if (url.includes('.')) {
+                    finalUrl = 'https://' + url;
+                } else {
+                    // Search on Google
+                    finalUrl = 'https://www.google.com/search?q=' + encodeURIComponent(url);
+                }
+            }
+            
+            sendCommand('navigate', finalUrl);
+            urlInput.value = finalUrl;
+        }
+
+        function showStartPage() {
+            isStartPage = true;
+            startPage.style.display = 'flex';
+            streamImg.style.display = 'none';
+            clickLayer.style.display = 'none';
+            urlInput.value = "";
+        }
+
+        function hideStartPage() {
+            isStartPage = false;
+            startPage.style.display = 'none';
+            streamImg.style.display = 'block';
+            clickLayer.style.display = 'block';
+        }
+
+        function closeTab(id, e) {
+            e.stopPropagation();
+            sendCommand('close-tab', id);
+        }
+
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            if (isFullscreen) {
+                document.body.classList.add('fullscreen-mode');
+            } else {
+                document.body.classList.remove('fullscreen-mode');
+            }
+        }
+
+        function sendCommand(type, data) {
+            if (type === 'click') {
+                // Click needs special formatting
+                ws.send(JSON.stringify({ type: 'click', x: data.x, y: data.y }));
+            } else {
+                ws.send(JSON.stringify({ type: type, data: data }));
+            }
+        }
+
+        // Inputs
+        urlInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') navigate(urlInput.value); });
+        bigInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') navigate(bigInput.value); });
+
+        // Keyboard handling for proxied apps
+        document.addEventListener('keydown', (e) => {
+            // F11 or Escape to toggle fullscreen
+            if (e.key === 'F11' || (e.key === 'Escape' && isFullscreen)) {
+                e.preventDefault();
+                toggleFullscreen();
+                return;
+            }
+
+            if(isStartPage) return; // Don't send keys while on start page
+            
+            const specialKeys = {
+                'ArrowUp': 'ArrowUp',
+                'ArrowDown': 'ArrowDown',
+                'ArrowLeft': 'ArrowLeft',
+                'ArrowRight': 'ArrowRight',
+                'Enter': 'Enter',
+                'Backspace': 'Backspace',
+                'Delete': 'Delete',
+                'Tab': 'Tab',
+                'Escape': 'Escape',
+            };
+            
+            if (specialKeys[e.key]) {
+                e.preventDefault();
+                sendCommand('keydown', specialKeys[e.key]);
+            } else if (e.key.length === 1) {
+                // Regular character input - don't check for modifiers, just send it
+                e.preventDefault();
+                sendCommand('type', e.key);
+            }
+        });
+
+        // Click Handling (Sends clicks to Puppeteer)
+        clickLayer.onmousedown = (e) => {
+            if(isStartPage) return;
+            if(!streamImg.src) return;
+            
+            const rect = streamImg.getBoundingClientRect();
+            const relX = e.clientX - rect.left;
+            const relY = e.clientY - rect.top;
+            
+            // Use actual dimensions (naturalWidth always 1280x720 from our server)
+            const naturalW = 1280;
+            const naturalH = 720;
+            
+            // The actual rendered dimensions accounting for object-fit: contain
+            let renderedW, renderedH;
+            
+            // Calculate what the actual display size is
+            const containerAspect = rect.width / rect.height;
+            const streamAspect = naturalW / naturalH;
+            
+            if (streamAspect > containerAspect) {
+                // Stream is wider than container - width is constrained
+                renderedW = rect.width;
+                renderedH = rect.width / streamAspect;
+            } else {
+                // Stream is taller than container - height is constrained
+                renderedW = rect.height * streamAspect;
+                renderedH = rect.height;
+            }
+            
+            // Calculate the offset of the rendered image within the container
+            const offsetX = (rect.width - renderedW) / 2;
+            const offsetY = (rect.height - renderedH) / 2;
+            
+            // Convert screen coordinates to stream coordinates
+            let clickX = (relX - offsetX) * (naturalW / renderedW);
+            let clickY = (relY - offsetY) * (naturalH / renderedH);
+            
+            // Clamp to valid range
+            clickX = Math.max(0, Math.min(clickX, naturalW - 1));
+            clickY = Math.max(0, Math.min(clickY, naturalH - 1));
+            
+            console.log(`Click: screen(${relX.toFixed(0)}, ${relY.toFixed(0)}) -> stream(${clickX.toFixed(0)}, ${clickY.toFixed(0)})`);
+            
+            sendCommand('click', {x: clickX, y: clickY});
+        };
+    </script>
+  </body>
+</html>
