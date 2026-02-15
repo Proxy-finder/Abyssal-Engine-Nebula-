@@ -23,10 +23,14 @@ const HEIGHT = 720;
 const paths = [
     // Environment variable (set by Docker/Koyeb)
     process.env.CHROME_BIN,
-    // Linux paths
+    // Linux paths (Koyeb)
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
-    '/snap/bin/chromium'
+    '/snap/bin/chromium',
+    // Windows paths (local development)
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 ].filter(Boolean);
 
 let exePath = null;
