@@ -292,7 +292,11 @@
         animate();
 
         // --- BROWSER LOGIC ---
-        const ws = new WebSocket('ws://' + window.location.hostname + ':' + window.location.port);
+        // Determine WebSocket protocol and URL
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port ? ':' + window.location.port : '';
+        const ws = new WebSocket(protocol + '//' + host + port);
         const streamImg = document.getElementById('stream-img');
         const startPage = document.getElementById('nebula-start');
         const clickLayer = document.getElementById('click-layer');

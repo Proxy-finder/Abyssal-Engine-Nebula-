@@ -104,6 +104,14 @@ async function createNewTab(ws, url = 'about:blank') {
     const app = express();
     const server = http.createServer(app);
     
+    // Add CORS and proper headers
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.header('Connection', 'Upgrade');
+        next();
+    });
+    
     app.use(express.static(path.join(__dirname)));
     app.get('/', (req, res) => {
         res.sendFile(path.join(__dirname, 'interface.html'));
