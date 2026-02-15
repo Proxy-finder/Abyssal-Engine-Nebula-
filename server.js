@@ -21,12 +21,13 @@ const HEIGHT = 720;
 
 // --- LOCATE BROWSER ---
 const paths = [
-    // Linux paths (Koyeb with buildpack)
-    process.env.CHROME_BIN || '/app/.apt/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
+    // Environment variable (set by Docker/Koyeb)
+    process.env.CHROME_BIN,
+    // Linux paths
     '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
     '/snap/bin/chromium'
-];
+].filter(Boolean);
 
 let exePath = null;
 for (const p of paths) {
