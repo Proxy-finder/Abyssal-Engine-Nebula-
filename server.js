@@ -15,7 +15,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // --- CONFIG ---
-const HTTP_PORT = 3000;
+const HTTP_PORT = process.env.PORT || 3000;
 const WIDTH = 1280;
 const HEIGHT = 720;
 
